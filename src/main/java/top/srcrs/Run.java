@@ -2,13 +2,6 @@ package top.srcrs;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.srcrs.domain.Cookie;
@@ -162,28 +155,22 @@ public class Run {
                     String s = iterator.next();
                     String rotation = s.replace("%2B", "+");
                     String body = "kw=" + s + "&tbs=" + tbs + "&sign=" + Encryption.enCodeMd5("kw=" + rotation + "tbs=" + tbs + "tiebaclient!!!");
-                    JSONObject post = new JSONObject();
-                    post = Request.post(SIGN_URL, body);
-                    int randomTime = new Random().nextInt(200) + 300;
+                    JSONObject post = Request.post(SIGN_URL, body);
+                    int randomTime = new Random().nextInt(3000) + 2000;
                     LOGGER.info("等待 {} 毫秒", randomTime);
                     TimeUnit.MILLISECONDS.sleep(randomTime);
                     if ("0".equals(post.getString("error_code"))) {
                         iterator.remove();
                         success.add(rotation);
                         failed.remove(rotation);
-//                        LOGGER.info(rotation + ": " + "签到成功");
                     } else {
                         failed.add(rotation);
-                        LOGGER.warn(rotation + ": " + "签到失败");
+                        LOGGER.warn(rotation + ": " + "签到失败, 错误码: " + post.getString("error_code"));
                     }
                 }
-                if (success.size() != followNum - invalid.size()) {
-                    // 为防止短时间内多次请求接口，触发风控，设置每一轮签到完等待 5 分钟
-                    Thread.sleep(1000 * 60 * 5);
-                    /**
-                     * 重新获取 tbs
-                     * 尝试解决以前第 1 次签到失败，剩余 4 次循环都会失败的错误。
-                     */
+                if (success.size() < followNum - invalid.size()) {
+                    // 为防止触发风控，设置每一轮签到完等待 1 分钟
+                    Thread.sleep(1000 * 60);
                     getTbs();
                 }
                 flag--;
@@ -201,29 +188,12 @@ public class Run {
      * @Time 2020-10-31
      */
     public void send(String sckey) {
-        /** 将要推送的数据 */
-        String text = "总: " + followNum + " - ";
-        text += "成功: " + success.size() + " 失败: " + (followNum - success.size());
-        String desp = "共 " + followNum + " 贴吧\n\n";
-        desp += "成功: " + success.size() + " 失败: " + (followNum - success.size());
-        String body = "text=" + text + "&desp=" + "TiebaSignIn运行结果\n\n" + desp;
-        StringEntity entityBody = new StringEntity(body, "UTF-8");
-        HttpClient client = HttpClients.createDefault();
-        HttpPost httpPost = new HttpPost("https://sc.ftqq.com/" + sckey + ".send");
-        httpPost.addHeader("Content-Type", "application/x-www-form-urlencoded");
-        httpPost.setEntity(entityBody);
-        HttpResponse resp = null;
-        String respContent = null;
+        String text = "总: " + followNum + " - 成功: " + success.size() + " 失败: " + (followNum - success.size());
+        String desp = "TiebaSignIn 运行结果\n\n共 " + followNum + " 贴吧\n\n成功: " + success.size() + " 失败: " + (followNum - success.size());
+        String body = "text=" + text + "&desp=" + desp;
         try {
-            resp = client.execute(httpPost);
-            HttpEntity entity = null;
-            if (resp.getStatusLine().getStatusCode() < 400) {
-                entity = resp.getEntity();
-            } else {
-                entity = resp.getEntity();
-            }
-            respContent = EntityUtils.toString(entity, "UTF-8");
-            LOGGER.info("server酱推送正常");
+            JSONObject response = Request.post("https://sc.ftqq.com/" + sckey + ".send", body);
+            LOGGER.info("server酱推送结果: {}", response);
         } catch (Exception e) {
             LOGGER.error("server酱发送失败 -- " + e);
         }

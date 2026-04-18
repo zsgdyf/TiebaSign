@@ -32,7 +32,16 @@ public class Encryption {
             // BigInteger函数则将8位的字符串转换成16位hex值，用字符串来表示；得到字符串形式的hash值
             //一个byte是八位二进制，也就是2位十六进制字符（2的8次方等于16的2次方）
 
-            return new BigInteger(1, md.digest()).toString(16);
+            byte[] messageDigest = md.digest();
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : messageDigest) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+            return hexString.toString();
         } catch (Exception e){
             LOGGER.error("字符串进行MD5加密错误 -- " + e);
             return "";
