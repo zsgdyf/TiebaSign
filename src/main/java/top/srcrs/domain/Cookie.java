@@ -1,27 +1,30 @@
 package top.srcrs.domain;
 
 /**
- * 存入用户所填写的BDUSS
+ * 用户身份凭证与 Cookie 封装
+ *
  * @author srcrs
  * @Time 2020-10-31
  */
 public class Cookie {
-    private static final Cookie cookie = new Cookie();
-    private String BDUSS;
-    private Cookie(){};
+    private static final Cookie INSTANCE = new Cookie();
+    private String bduss = "";
+
+    private Cookie() {}
 
     public static Cookie getInstance() {
-        return cookie;
+        return INSTANCE;
     }
 
     public String getBDUSS() {
-        return BDUSS;
+        return bduss;
     }
 
-    public void setBDUSS(String BDUSS) {
-        this.BDUSS = BDUSS;
+    public void setBDUSS(String bduss) {
+        this.bduss = (bduss == null) ? "" : bduss.trim();
     }
+
     public String getCookie() {
-        return "BDUSS="+BDUSS;
+        return "BDUSS=" + bduss;
     }
 }

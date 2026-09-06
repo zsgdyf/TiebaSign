@@ -3,11 +3,13 @@ package top.srcrs.util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 /**
- * 对字符串进行加密
+ * 字符串加密与哈希计算工具类
+ *
  * @author srcrs
  * @Time 2020-10-31
  */
@@ -15,36 +17,39 @@ public class Encryption {
     /** 获取日志记录器对象 */
     private static final Logger LOGGER = LoggerFactory.getLogger(Encryption.class);
 
+    private Encryption() {}
+
     /**
-     * 对字符串进行 MD5加密
+     * 对字符串进行 MD5 加密
+     *
      * @param str 传入一个字符串
      * @return String 加密后的字符串
-     * @author srcrs
-     * @Time 2020-10-31
      */
-    public static String enCodeMd5(String str){
-        try{
-            // 生成一个MD5加密计算摘要
-            MessageDigest md = MessageDigest.getInstance("MD5");
-            // 计算md5函数
-            md.update(str.getBytes("UTF-8"));
-            // digest()最后确定返回md5 hash值，返回值为8位字符串。因为md5 hash值是16位的hex值，实际上就是8位的字符
-            // BigInteger函数则将8位的字符串转换成16位hex值，用字符串来表示；得到字符串形式的hash值
-            //一个byte是八位二进制，也就是2位十六进制字符（2的8次方等于16的2次方）
-
-            byte[] messageDigest = md.digest();
-            StringBuilder hexString = new StringBuilder();
-            for (byte b : messageDigest) {
-                String hex = Integer.toHexString(0xff & b);
-                if (hex.length() == 1) {
-                    hexString.append('0');
-                }
-                hexString.append(hex);
-            }
-            return hexString.toString();
-        } catch (Exception e){
-            LOGGER.error("字符串进行MD5加密错误 -- " + e);
+    public static String enCodeMd5(String str) {
+        if (str == null) {
             return "";
         }
+        try {
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            byte[] digest = md.digest(str.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hexString = new StringBuilder(digest.length * 2);
+            for (byte b : digest) {
+                hexString.append(String.format("%02x", b));
+            }
+            return hexString.toString();
+        } catch (NoSuchAlgorithmException e) {
+            LOGGER.error("字符串进行 MD5 加密错误", e);
+            return "";
+        }
+    }
+
+    /**
+     * 对字符串进行 MD5 加密并转为大写
+     *
+     * @param str 传入一个字符串
+     * @return 大写的 MD5 字符串
+     */
+    public static String enCodeMd5Upper(String str) {
+        return enCodeMd5(str).toUpperCase();
     }
 }
